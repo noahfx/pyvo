@@ -31,7 +31,7 @@ from .adhoc import DatalinkResultsMixin, DatalinkRecordMixin
 __all__ = ["search", "SCSService", "SCSQuery", "SCSResults", "SCSRecord"]
 
 
-def search(url, pos, radius=1.0, verbosity=2, **keywords):
+def search(*urls, pos, radius=1.0, verbosity=2, **keywords):
     """
     submit a simple Cone Search query that requests objects or observations
     whose positions fall within some distance from a search position.
@@ -77,7 +77,7 @@ def search(url, pos, radius=1.0, verbosity=2, **keywords):
     pyvo.dal.query.DALServiceError
     pyvo.dal.query.DALQueryError
     """
-    return SCSService(url).search(pos, radius, verbosity, **keywords)
+    return SCSService(*urls).search(pos, radius, verbosity, **keywords)
 
 
 class SCSService(DALService):
@@ -85,7 +85,7 @@ class SCSService(DALService):
     a representation of a Cone Search service
     """
 
-    def __init__(self, baseurl):
+    def __init__(self, *baseurls):
         """
         instantiate a Cone Search service
 
@@ -94,7 +94,7 @@ class SCSService(DALService):
         baseurl : str
            the base URL for submitting search queries to the service.
         """
-        super(SCSService, self).__init__(baseurl)
+        super(SCSService, self).__init__(*baseurls)
 
     def search(self, pos, radius=1.0, verbosity=2, **keywords):
         """
@@ -179,7 +179,10 @@ class SCSService(DALService):
         --------
         SCSQuery
         """
-        return SCSQuery(self.baseurl, pos, radius, verbosity, **keywords)
+        return SCSQuery(
+            *self.baseurls,
+            pos=pos, radius=radius, verbosity=verbosity, **keywords
+        )
 
 
 class SCSQuery(DALQuery):
@@ -203,7 +206,8 @@ class SCSQuery(DALQuery):
     """
 
     def __init__(
-            self, baseurl, pos=None, radius=None, verbosity=None, **keywords):
+        self, *baseurls, pos=None, radius=None, verbosity=None, **keywords
+    ):
         """
         initialize the query object with a baseurl and the given parameters
 
@@ -224,7 +228,7 @@ class SCSQuery(DALQuery):
             set of columns, 3 means as many columns as are
             available.
         """
-        super(SCSQuery, self).__init__(baseurl)
+        super(SCSQuery, self).__init__(*baseurls)
 
         if pos:
             self.pos = pos
