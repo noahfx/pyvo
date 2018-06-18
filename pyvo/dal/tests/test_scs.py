@@ -34,7 +34,7 @@ def scs(mocker):
 
 @pytest.mark.usefixtures('scs')
 def test_search():
-    results = search('http://example.com/scs', (78, 2), 0.5)
+    results = search('http://example.com/scs', pos=(78, 2), radius=0.5)
 
     assert len(results) == 1273
 
