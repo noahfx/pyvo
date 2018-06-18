@@ -69,7 +69,7 @@ class DALService(object):
     endpoint.
     """
 
-    def __init__(self, baseurl):
+    def __init__(self, *baseurls):
         """
         instantiate the service connecting it to a base URL
 
@@ -78,7 +78,18 @@ class DALService(object):
         baseurl :  str
            the base URL that should be used for forming queries to the service.
         """
-        self._baseurl = baseurl
+        if not baseurls:
+            raise ValueError('No baseurl defined')
+
+        self._baseurls = baseurls
+
+    @property
+    def baseurls(self):
+        """
+        the base URLs identifying the location of the service and where
+        queries are submitted (read-only)
+        """
+        return self._baseurls
 
     @property
     def baseurl(self):
@@ -86,7 +97,7 @@ class DALService(object):
         the base URL identifying the location of the service and where
         queries are submitted (read-only)
         """
-        return self._baseurl
+        return self._baseurls[0]
 
     def search(self, **keywords):
         """
@@ -120,7 +131,7 @@ class DALService(object):
         DALQuery
            a generic query object
         """
-        q = DALQuery(self.baseurl, **keywords)
+        q = DALQuery(*self.baseurls, **keywords)
         return q
 
     def describe(self, width=None):
@@ -162,16 +173,31 @@ class DALQuery(dict):
 
     _ex = None
 
-    def __init__(self, baseurl, **keywords):
+    def __init__(self, *baseurls, **keywords):
         """
         initialize the query object with a baseurl
         """
-        if type(baseurl) == six.binary_type:
-            baseurl = baseurl.decode("utf-8")
+        if not baseurls:
+            raise ValueError('No baseurl defined')
 
-        self._baseurl = baseurl.rstrip("?")
+        baseurls = (
+            baseurl.decode('ascii')
+            if type(baseurl) == six.binary_type
+            else baseurl
+            for baseurl in baseurls)
+        baseurls = (baseurl.rstrip('?') for baseurl in baseurls)
+
+        self._baseurls = tuple(baseurls)
 
         self.update({key.upper(): value for key, value in keywords.items()})
+
+    @property
+    def baseurls(self):
+        """
+        the base URLs that this query will be sent to when one of the
+        execute functions is called.
+        """
+        return self._baseurls
 
     @property
     def baseurl(self):
@@ -179,7 +205,23 @@ class DALQuery(dict):
         the base URL that this query will be sent to when one of the
         execute functions is called.
         """
-        return self._baseurl
+        return self._baseurls[0]
+
+    @property
+    def queryurls(self):
+        """
+        The URLs that encodes the current query. This is the
+        URL that the execute functions will use if called next.
+        """
+        return self.baseurls
+
+    @property
+    def queryurl(self):
+        """
+        The URL that encodes the current query. This is the
+        URL that the execute functions will use if called next.
+        """
+        return self.baseurl
 
     def execute(self):
         """
@@ -278,14 +320,6 @@ class DALQuery(dict):
         if self._ex:
             e = self._ex
             raise DALServiceError.from_except(e, self.queryurl)
-
-    @property
-    def queryurl(self):
-        """
-        The URL that encodes the current query. This is the
-        URL that the execute functions will use if called next.
-        """
-        return self.baseurl
 
 
 class DALResults(object):
