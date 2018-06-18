@@ -45,7 +45,7 @@ __all__ = ["search", "SIAService", "SIAQuery", "SIAResults", "SIARecord"]
 
 
 def search(
-        url, pos, size=1.0, format='all', intersect="overlaps", verbosity=2,
+        *urls, pos, size=1.0, format='all', intersect="overlaps", verbosity=2,
         **keywords):
     """
     submit a simple SIA query that requests images overlapping a given region
@@ -110,7 +110,7 @@ def search(
     pyvo.dal.query.DALServiceError
     pyvo.dal.query.DALQueryError
     """
-    service = SIAService(url)
+    service = SIAService(*urls)
     return service.search(pos, size, format, intersect, verbosity, **keywords)
 
 
@@ -119,7 +119,7 @@ class SIAService(DALService):
     a representation of an SIA service
     """
 
-    def __init__(self, baseurl):
+    def __init__(self, *baseurls):
         """
         instantiate an SIA service
 
@@ -128,7 +128,7 @@ class SIAService(DALService):
         baseurl : str
            the base URL for submitting search queries to the service.
         """
-        super(SIAService, self).__init__(baseurl)
+        super(SIAService, self).__init__(*baseurls)
 
     def _get_metadata(self):
         """
@@ -298,7 +298,9 @@ class SIAService(DALService):
         SIAQuery
         """
         return SIAQuery(
-            self.baseurl, pos, size, format, intersect, verbosity, **keywords)
+            *self.baseurls,
+            pos=pos, size=size, format=format, intersect=intersect,
+            verbosity=verbosity, **keywords)
 
 
 class SIAQuery(DALQuery):
@@ -322,7 +324,7 @@ class SIAQuery(DALQuery):
     """
 
     def __init__(
-            self, baseurl, pos=None, size=None, format=None, intersect=None,
+            self, *baseurls, pos=None, size=None, format=None, intersect=None,
             verbosity=None, **keywords):
         """
         initialize the query object with a baseurl and the given parameters
@@ -371,7 +373,7 @@ class SIAQuery(DALQuery):
             with the parameters set by the other arguments to
             this function, these keywords will override.
         """
-        super(SIAQuery, self).__init__(baseurl, **keywords)
+        super(SIAQuery, self).__init__(*baseurls, **keywords)
 
         if pos:
             self.pos = pos
